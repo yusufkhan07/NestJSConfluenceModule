@@ -13,6 +13,14 @@ const CONFIG = {
   content_url: '',
 };
 
+//true for demo environment
+if (true) {
+  CONFIG.client_id = 'ZyxuXDiPUPShUa0xBKwWBTVUIVfb1028';
+  CONFIG.client_secret =
+    'yQgOTQDVWRGfBwV0_YsnVvohVMTQPpUh6-dVqaRcIvvIYrKs3LLFvmEz_lQ7VdQJ';
+  CONFIG.redirect_uri = '';
+}
+
 CONFIG.api_base_path = `${CONFIG.api_base_path}${CONFIG.cloud_id}/`;
 CONFIG.spaces_url = `${CONFIG.api_base_path}wiki/rest/api/space`;
 CONFIG.content_url = `${CONFIG.api_base_path}wiki/rest/api/content`;

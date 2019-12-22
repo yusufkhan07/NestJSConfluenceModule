@@ -8,6 +8,8 @@ import {
   Res,
   ParseIntPipe,
   Body,
+  Session,
+  UnauthorizedException,
 } from '@nestjs/common';
 import Axios from 'axios';
 import { Request } from 'express';
@@ -63,7 +65,11 @@ export class ConfluenceController {
     summary: 'Exchange Grant Key for Access Token',
   })
   @Get('/authorize')
-  public async authorize(@Req() request, @Query('code') code: string) {
+  public async authorize(
+    @Session() session: { accessToken: string | undefined },
+    @Req() request,
+    @Query('code') code: string,
+  ) {
     try {
       const reqBody = {
         code,
@@ -76,6 +82,8 @@ export class ConfluenceController {
       const apiResponse = await Axios.post(CONFIG.oauth_url, reqBody);
       const token = apiResponse.data.access_token;
       const scope = apiResponse.data.scope;
+
+      session.accessToken = token;
 
       return {
         accessToken: token,
@@ -114,11 +122,16 @@ export class ConfluenceController {
   })
   @Get('/spaces')
   public async getSpaces(
+    @Session() session: { accessToken: string | undefined },
     @Req() request,
     @Query('start', ParseIntPipe) start: number,
     @Query('limit', ParseIntPipe) limit: number,
-    @Query('accessToken') accessToken: string,
   ): Promise<OutSpacesDto> {
+    if (session.accessToken === undefined) {
+      throw new UnauthorizedException();
+    }
+    const accessToken = session.accessToken;
+
     if (typeof start !== 'number') {
       start = 0;
     }
@@ -139,11 +152,6 @@ export class ConfluenceController {
         headers: { Authorization: authStr },
         params: queryParams,
       });
-
-      console.log(
-        'TCL: ConfluenceController -> getSpaces -> apiResponse',
-        apiResponse.data,
-      );
 
       return plainToClass(
         OutSpacesDto,
@@ -176,9 +184,14 @@ export class ConfluenceController {
 
   @Post('/content')
   public async createPage(
+    @Session() session: { accessToken: string | undefined },
     @Body() dto: CreatePageDto,
-    @Query('accessToken') accessToken: string,
   ) {
+    if (session.accessToken === undefined) {
+      throw new UnauthorizedException();
+    }
+    const accessToken = session.accessToken;
+
     try {
       const authStr = `Bearer ${accessToken}`;
 
@@ -221,8 +234,6 @@ export class ConfluenceController {
           excludeExtraneousValues: true,
         },
       );
-
-      // return apiResponse;
     } catch (err) {
       if (
         err &&

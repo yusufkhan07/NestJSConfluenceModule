@@ -5,6 +5,7 @@ const CONFIG = {
   cloud_id: '4ccb1786-ce08-4615-b02d-f3b31b1839a0',
   redirect_uri: `http://localhost:3000/confluence/conf-callback/`,
 
+  session_secret: 'ssssssssxaxs',
   api_base_path: `https://api.atlassian.com/ex/confluence/`,
   oauth_url: 'https://auth.atlassian.com/oauth/token',
 

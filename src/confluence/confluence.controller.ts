@@ -41,33 +41,11 @@ import {
 @Controller('confluence')
 export class ConfluenceController {
   /**
-   * A callback function which receives the Auth Grant & redirect
-   * user to /confluence/authorize Page
-   *
+   * A callback function which receives the Auth Grant
    *
    * @param  {Request} request
    * @param  {any} res
    * @return {void}@memberof ConfluenceController
-   */
-  @ApiOperation({
-    summary: 'Called by Confluence with Auth Grant Key',
-  })
-  @Get('/conf-callback')
-  public async confCallback(
-    @Req() request: Request,
-    @Res() res,
-    @Query('code') code: string,
-  ) {
-    res.redirect('/confluence/authorize?code=' + code);
-  }
-
-  /**
-   * Exchange Auth Grant for Auth Token
-   *
-   * @param  {any} request
-   * @param  {string} code
-   * @return {string} access_token
-   * @memberof ConfluenceController
    */
   @ApiResponse({
     status: 200,
@@ -81,12 +59,12 @@ export class ConfluenceController {
     },
   })
   @ApiOperation({
-    summary: 'Exchange Grant Key for Access Token',
+    summary:
+      'Called by Confluence with Auth Grant Key. Exchange the code for AccessToken',
   })
-  @Get('/authorize')
-  public async authorize(
+  @Get('/conf-callback')
+  public async confCallback(
     @Session() session: { accessToken: string | undefined },
-    @Req() request,
     @Query('code') code: string,
   ) {
     const reqBody = {

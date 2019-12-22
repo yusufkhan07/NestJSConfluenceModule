@@ -10,15 +10,34 @@ import {
   Body,
   Session,
   UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import Axios from 'axios';
 import { Request } from 'express';
-import { ApiOperation, ApiBody, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiBody,
+  ApiResponse,
+  ApiQuery,
+  ApiTags,
+  ApiBadRequestResponse,
+  ApiOkResponse,
+  ApiForbiddenResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { plainToClass } from 'class-transformer';
 
-import { CONFIG, OutSpacesDto } from '.';
-import { CreatePageDto } from './dto/create-page.dto';
+import {
+  CONFIG,
+  OutSpacesDto,
+  OutPageDto,
+  CreatePageDto,
+  PageBodyDto,
+} from '.';
 
+@ApiBadRequestResponse({})
+@ApiTags('confluence')
 @Controller('confluence')
 export class ConfluenceController {
   /**
@@ -70,15 +89,15 @@ export class ConfluenceController {
     @Req() request,
     @Query('code') code: string,
   ) {
-    try {
-      const reqBody = {
-        code,
-        grant_type: 'authorization_code',
-        client_id: CONFIG.client_id,
-        client_secret: CONFIG.client_secret,
-        redirect_uri: CONFIG.redirect_uri,
-      };
+    const reqBody = {
+      code,
+      grant_type: 'authorization_code',
+      client_id: CONFIG.client_id,
+      client_secret: CONFIG.client_secret,
+      redirect_uri: CONFIG.redirect_uri,
+    };
 
+    try {
       const apiResponse = await Axios.post(CONFIG.oauth_url, reqBody);
       const token = apiResponse.data.access_token;
       const scope = apiResponse.data.scope;
@@ -89,19 +108,27 @@ export class ConfluenceController {
         accessToken: token,
       };
     } catch (err) {
-      if (
-        err &&
-        err.response &&
-        err.response.data &&
-        err.response.data['error'] !== undefined
-      ) {
-        return err.response.data.error;
-      } else {
-        throw err;
+      switch (err.response.status) {
+        case 400:
+          throw new BadRequestException(err.response.data.message);
+
+        case 401:
+          throw new UnauthorizedException(err.response.data.message);
+
+        case 403:
+          throw new ForbiddenException(err.response.data.message);
+
+        default:
+          throw err;
       }
     }
   }
 
+  @ApiUnauthorizedResponse({})
+  @ApiForbiddenResponse({})
+  @ApiOkResponse({
+    type: OutSpacesDto,
+  })
   @ApiQuery({
     name: 'start',
     type: Number,
@@ -117,9 +144,6 @@ export class ConfluenceController {
       default: 25,
     },
   })
-  @ApiResponse({
-    type: OutSpacesDto,
-  })
   @Get('/spaces')
   public async getSpaces(
     @Session() session: { accessToken: string | undefined },
@@ -128,7 +152,7 @@ export class ConfluenceController {
     @Query('limit', ParseIntPipe) limit: number,
   ): Promise<OutSpacesDto> {
     if (session.accessToken === undefined) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Token is missing from session');
     }
     const accessToken = session.accessToken;
 
@@ -140,14 +164,14 @@ export class ConfluenceController {
       limit = 25;
     }
 
-    try {
-      const authStr = `Bearer ${accessToken}`;
-      const queryParams = {
-        status: 'current',
-        start,
-        limit,
-      };
+    const authStr = `Bearer ${accessToken}`;
+    const queryParams = {
+      status: 'current',
+      start,
+      limit,
+    };
 
+    try {
       const apiResponse = await Axios.get(CONFIG.spaces_url, {
         headers: { Authorization: authStr },
         params: queryParams,
@@ -169,26 +193,37 @@ export class ConfluenceController {
 
       // return apiResponse;
     } catch (err) {
-      if (
-        err &&
-        err.response &&
-        err.response.data &&
-        err.response.data['error'] !== undefined
-      ) {
-        return err.response.data.error;
-      } else {
-        throw err;
+      switch (err.response.status) {
+        case 400:
+          throw new BadRequestException(err.response.data.message);
+
+        case 401:
+          throw new UnauthorizedException(err.response.data.message);
+
+        case 403:
+          throw new ForbiddenException(err.response.data.message);
+
+        default:
+          throw err;
       }
     }
   }
 
+  //
+  private _bodyFactory(body: PageBodyDto) {}
+
+  @ApiUnauthorizedResponse({})
+  @ApiForbiddenResponse({})
+  @ApiOkResponse({
+    type: OutPageDto,
+  })
   @Post('/content')
   public async createPage(
     @Session() session: { accessToken: string | undefined },
     @Body() dto: CreatePageDto,
   ) {
     if (session.accessToken === undefined) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Token is missing from session');
     }
     const accessToken = session.accessToken;
 
@@ -196,14 +231,14 @@ export class ConfluenceController {
       const authStr = `Bearer ${accessToken}`;
 
       const reqBody = {
-        title: '',
-        type: '',
+        title: dto.title,
+        type: 'page',
         space: {
-          key: '',
+          key: dto.spaceKey,
         },
         body: {
           storage: {
-            value: '',
+            value: this._bodyFactory(dto.body),
             representation: 'storage',
           },
         },
@@ -235,15 +270,18 @@ export class ConfluenceController {
         },
       );
     } catch (err) {
-      if (
-        err &&
-        err.response &&
-        err.response.data &&
-        err.response.data['error'] !== undefined
-      ) {
-        return err.response.data.error;
-      } else {
-        throw err;
+      switch (err.response.status) {
+        case 400:
+          throw new BadRequestException(err.response.data.message);
+
+        case 401:
+          throw new UnauthorizedException(err.response.data.message);
+
+        case 403:
+          throw new ForbiddenException(err.response.data.message);
+
+        default:
+          throw err;
       }
     }
   }

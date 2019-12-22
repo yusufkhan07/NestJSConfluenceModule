@@ -18,7 +18,7 @@ if (true) {
   CONFIG.client_id = 'ZyxuXDiPUPShUa0xBKwWBTVUIVfb1028';
   CONFIG.client_secret =
     'yQgOTQDVWRGfBwV0_YsnVvohVMTQPpUh6-dVqaRcIvvIYrKs3LLFvmEz_lQ7VdQJ';
-  CONFIG.redirect_uri = '';
+  CONFIG.redirect_uri = 'https://34.68.112.118/confluence/conf-callback/';
 }
 
 CONFIG.api_base_path = `${CONFIG.api_base_path}${CONFIG.cloud_id}/`;

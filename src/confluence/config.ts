@@ -9,9 +9,11 @@ const CONFIG = {
   oauth_url: 'https://auth.atlassian.com/oauth/token',
 
   spaces_url: '',
+  content_url: '',
 };
 
 CONFIG.api_base_path = `${CONFIG.api_base_path}${CONFIG.cloud_id}/`;
 CONFIG.spaces_url = `${CONFIG.api_base_path}wiki/rest/api/space`;
+CONFIG.content_url = `${CONFIG.api_base_path}wiki/rest/api/content`;
 
 export { CONFIG };

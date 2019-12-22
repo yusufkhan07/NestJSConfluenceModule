@@ -7,6 +7,7 @@ import {
   Redirect,
   Res,
   ParseIntPipe,
+  Body,
 } from '@nestjs/common';
 import Axios from 'axios';
 import { Request } from 'express';
@@ -14,6 +15,7 @@ import { ApiOperation, ApiBody, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { plainToClass } from 'class-transformer';
 
 import { CONFIG, OutSpacesDto } from '.';
+import { CreatePageDto } from './dto/create-page.dto';
 
 @Controller('confluence')
 export class ConfluenceController {
@@ -136,6 +138,69 @@ export class ConfluenceController {
       const apiResponse = await Axios.get(CONFIG.spaces_url, {
         headers: { Authorization: authStr },
         params: queryParams,
+      });
+
+      console.log(
+        'TCL: ConfluenceController -> getSpaces -> apiResponse',
+        apiResponse.data,
+      );
+
+      return plainToClass(
+        OutSpacesDto,
+        {
+          results: apiResponse.data.results,
+          _links: apiResponse.data._links,
+          limit: apiResponse.data.limit,
+          start: apiResponse.data.start,
+          size: apiResponse.data.size,
+        },
+        {
+          excludeExtraneousValues: true,
+        },
+      );
+
+      // return apiResponse;
+    } catch (err) {
+      if (
+        err &&
+        err.response &&
+        err.response.data &&
+        err.response.data['error'] !== undefined
+      ) {
+        return err.response.data.error;
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  @Post('/content')
+  public async createPage(
+    @Body() dto: CreatePageDto,
+    @Query('accessToken') accessToken: string,
+  ) {
+    try {
+      const authStr = `Bearer ${accessToken}`;
+
+      const reqBody = {
+        title: '',
+        type: '',
+        space: {
+          key: '',
+        },
+        body: {
+          storage: {
+            value: '',
+            representation: 'storage',
+          },
+        },
+      };
+
+      const apiResponse = await Axios.post(CONFIG.content_url, reqBody, {
+        headers: {
+          Authorization: authStr,
+          'Content-Type': 'application/json',
+        },
       });
 
       console.log(

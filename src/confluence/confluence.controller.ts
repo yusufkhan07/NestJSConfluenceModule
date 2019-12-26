@@ -4,8 +4,6 @@ import {
   Req,
   Query,
   Get,
-  Redirect,
-  Res,
   ParseIntPipe,
   Body,
   Session,
@@ -14,10 +12,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import Axios from 'axios';
-import { Request } from 'express';
 import {
   ApiOperation,
-  ApiBody,
   ApiResponse,
   ApiQuery,
   ApiTags,
@@ -35,6 +31,13 @@ import {
   CreatePageDto,
   PageBodyDto,
 } from '.';
+
+// imports for the tempa
+import { pageTemplate } from './pageTemplate';
+import * as Handlebars from 'handlebars';
+Handlebars.registerHelper('inc', function(value, options) {
+  return parseInt(value) + 1;
+});
 
 @ApiBadRequestResponse({})
 @ApiTags('confluence')
@@ -187,8 +190,14 @@ export class ConfluenceController {
     }
   }
 
-  //
-  private _bodyFactory(body: PageBodyDto) {}
+  // convert json into XHTML
+  private _bodyFactory(body: PageBodyDto): string {
+    const template = Handlebars.compile(pageTemplate);
+
+    const compiledPage = template(body);
+
+    return compiledPage;
+  }
 
   @ApiUnauthorizedResponse({})
   @ApiForbiddenResponse({})
@@ -205,34 +214,29 @@ export class ConfluenceController {
     }
     const accessToken = session.accessToken;
 
+    const authStr = `Bearer ${accessToken}`;
+
+    const reqBody = {
+      type: 'page',
+      title: dto.title,
+      space: {
+        key: dto.spaceKey,
+      },
+      body: {
+        storage: {
+          value: this._bodyFactory(dto.body),
+          representation: 'storage',
+        },
+      },
+    };
+
     try {
-      const authStr = `Bearer ${accessToken}`;
-
-      const reqBody = {
-        title: dto.title,
-        type: 'page',
-        space: {
-          key: dto.spaceKey,
-        },
-        body: {
-          storage: {
-            value: this._bodyFactory(dto.body),
-            representation: 'storage',
-          },
-        },
-      };
-
       const apiResponse = await Axios.post(CONFIG.content_url, reqBody, {
         headers: {
           Authorization: authStr,
           'Content-Type': 'application/json',
         },
       });
-
-      console.log(
-        'TCL: ConfluenceController -> getSpaces -> apiResponse',
-        apiResponse.data,
-      );
 
       return plainToClass(
         OutSpacesDto,

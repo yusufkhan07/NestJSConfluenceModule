@@ -24,25 +24,16 @@ import {
 } from '@nestjs/swagger';
 import { plainToClass } from 'class-transformer';
 
-import {
-  CONFIG,
-  OutSpacesDto,
-  OutPageDto,
-  CreatePageDto,
-  PageBodyDto,
-} from '.';
+import { ConfluenceService } from './confluence.service';
 
-// imports for the tempa
-import { pageTemplate } from './pageTemplate';
-import * as Handlebars from 'handlebars';
-Handlebars.registerHelper('inc', function(value, options) {
-  return parseInt(value) + 1;
-});
+import { OutSpacesDto, OutPageDto, CreatePageDto } from '.';
 
 @ApiBadRequestResponse({})
 @ApiTags('confluence')
 @Controller('confluence')
 export class ConfluenceController {
+  constructor(private readonly confluenceService: ConfluenceService) {}
+
   /**
    * A callback function which receives the Auth Grant
    *
@@ -69,39 +60,17 @@ export class ConfluenceController {
   public async confCallback(
     @Session() session: { accessToken: string | undefined },
     @Query('code') code: string,
-  ) {
-    const reqBody = {
-      code,
-      grant_type: 'authorization_code',
-      client_id: CONFIG.client_id,
-      client_secret: CONFIG.client_secret,
-      redirect_uri: CONFIG.redirect_uri,
-    };
-
+  ): Promise<{
+    accessToken: string;
+  }> {
     try {
-      const apiResponse = await Axios.post(CONFIG.oauth_url, reqBody);
-      const token = apiResponse.data.access_token;
-      const scope = apiResponse.data.scope;
-
-      session.accessToken = token;
-
+      const result = await this.confluenceService.confCallback(code);
+      session.accessToken = result.accessToken;
       return {
-        accessToken: token,
+        accessToken: result.accessToken,
       };
     } catch (err) {
-      switch (err.response.status) {
-        case 400:
-          throw new BadRequestException(err.response.data.message);
-
-        case 401:
-          throw new UnauthorizedException(err.response.data.message);
-
-        case 403:
-          throw new ForbiddenException(err.response.data.message);
-
-        default:
-          throw err;
-      }
+      throw err;
     }
   }
 
@@ -128,14 +97,12 @@ export class ConfluenceController {
   @Get('/spaces')
   public async getSpaces(
     @Session() session: { accessToken: string | undefined },
-    @Req() request,
-    @Query('start', ParseIntPipe) start: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('start', ParseIntPipe) start: number = 0,
+    @Query('limit', ParseIntPipe) limit: number = 25,
   ): Promise<OutSpacesDto> {
     if (session.accessToken === undefined) {
       throw new UnauthorizedException('Token is missing from session');
     }
-    const accessToken = session.accessToken;
 
     if (typeof start !== 'number') {
       start = 0;
@@ -145,58 +112,21 @@ export class ConfluenceController {
       limit = 25;
     }
 
-    const authStr = `Bearer ${accessToken}`;
-    const queryParams = {
-      status: 'current',
-      start,
-      limit,
-    };
-
     try {
-      const apiResponse = await Axios.get(CONFIG.spaces_url, {
-        headers: { Authorization: authStr },
-        params: queryParams,
-      });
-
-      return plainToClass(
-        OutSpacesDto,
-        {
-          results: apiResponse.data.results,
-          _links: apiResponse.data._links,
-          limit: apiResponse.data.limit,
-          start: apiResponse.data.start,
-          size: apiResponse.data.size,
-        },
-        {
-          excludeExtraneousValues: true,
-        },
+      const result = await this.confluenceService.getSpaces(
+        session.accessToken,
+        start,
+        limit,
       );
+
+      return plainToClass(OutSpacesDto, result, {
+        excludeExtraneousValues: true,
+      });
 
       // return apiResponse;
     } catch (err) {
-      switch (err.response.status) {
-        case 400:
-          throw new BadRequestException(err.response.data.message);
-
-        case 401:
-          throw new UnauthorizedException(err.response.data.message);
-
-        case 403:
-          throw new ForbiddenException(err.response.data.message);
-
-        default:
-          throw err;
-      }
+      throw err;
     }
-  }
-
-  // convert json into XHTML
-  private _bodyFactory(body: PageBodyDto): string {
-    const template = Handlebars.compile(pageTemplate);
-
-    const compiledPage = template(body);
-
-    return compiledPage;
   }
 
   @ApiUnauthorizedResponse({})
@@ -208,63 +138,21 @@ export class ConfluenceController {
   public async createPage(
     @Session() session: { accessToken: string | undefined },
     @Body() dto: CreatePageDto,
-  ) {
+  ): Promise<OutPageDto> {
     if (session.accessToken === undefined) {
       throw new UnauthorizedException('Token is missing from session');
     }
-    const accessToken = session.accessToken;
-
-    const authStr = `Bearer ${accessToken}`;
-
-    const reqBody = {
-      type: 'page',
-      title: dto.title,
-      space: {
-        key: dto.spaceKey,
-      },
-      body: {
-        storage: {
-          value: this._bodyFactory(dto.body),
-          representation: 'storage',
-        },
-      },
-    };
 
     try {
-      const apiResponse = await Axios.post(CONFIG.content_url, reqBody, {
-        headers: {
-          Authorization: authStr,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      return plainToClass(
-        OutSpacesDto,
-        {
-          results: apiResponse.data.results,
-          _links: apiResponse.data._links,
-          limit: apiResponse.data.limit,
-          start: apiResponse.data.start,
-          size: apiResponse.data.size,
-        },
-        {
-          excludeExtraneousValues: true,
-        },
+      const result = await this.confluenceService.createPage(
+        session.accessToken,
+        dto,
       );
+      return plainToClass(OutPageDto, result, {
+        excludeExtraneousValues: true,
+      });
     } catch (err) {
-      switch (err.response.status) {
-        case 400:
-          throw new BadRequestException(err.response.data.message);
-
-        case 401:
-          throw new UnauthorizedException(err.response.data.message);
-
-        case 403:
-          throw new ForbiddenException(err.response.data.message);
-
-        default:
-          throw err;
-      }
+      throw err;
     }
   }
 }

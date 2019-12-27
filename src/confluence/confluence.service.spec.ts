@@ -1,10 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfluenceService } from './confluence.service';
 import {
   BadRequestException,
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
+
+import { ConfluenceService } from './confluence.service';
+
 import { CreatePageDto } from '.';
 
 describe('ConfluenceService', () => {

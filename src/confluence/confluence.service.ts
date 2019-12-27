@@ -4,6 +4,9 @@ import {
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
+
+import Axios from 'axios';
+
 import {
   CONFIG,
   PageBodyDto,
@@ -11,11 +14,10 @@ import {
   PostContentResponseDto,
   GetSpacesResponseDto,
 } from '.';
-import Axios from 'axios';
 
-// imports for the tempa
-import { pageTemplate } from './pageTemplate';
+// imports for the tempplating
 import * as Handlebars from 'handlebars';
+import { pageTemplate } from './pageTemplate';
 Handlebars.registerHelper('inc', function(value, options) {
   return parseInt(value) + 1;
 });

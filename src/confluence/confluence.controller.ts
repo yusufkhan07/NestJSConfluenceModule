@@ -1,17 +1,13 @@
 import {
   Controller,
   Post,
-  Req,
   Query,
   Get,
   ParseIntPipe,
   Body,
   Session,
   UnauthorizedException,
-  BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
-import Axios from 'axios';
 import {
   ApiOperation,
   ApiResponse,

@@ -1,5 +1,5 @@
 export const pageTemplate = `<h2><span style="color: rgb(101,84,192);"><ac:image><ri:url ri:value="{{{logo}}}" /></ac:image></span></h2>
-<h1><strong><span style="color: rgb(101,84,192);">Week 13</span></strong></h1>
+<h1><strong><span style="color: rgb(101,84,192);">{{title}}</span></strong></h1>
 <h2><span style="color: rgb(0,0,0);"><strong>{{date}} | {{percentage}}%</strong></span></h2>
 <p><br /></p>
 <p><ac:image ac:align="left" ac:width="60"><ri:url ri:value="https://github.com/NoumanDilshad/images/blob/master/banner.png?raw=true" /></ac:image></p>

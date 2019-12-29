@@ -116,6 +116,7 @@ export class ConfluenceService {
       logo:
         'https://github.com/NoumanDilshad/images/blob/master/logo.png?raw=true',
       date: body.createdAt.toLocaleDateString(),
+      title: body.name,
       percentage: body.participationRate * 100,
       actionItems: body.actionItems.map(x => ({
         selected: x.selected,

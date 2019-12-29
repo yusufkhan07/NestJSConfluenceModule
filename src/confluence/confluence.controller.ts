@@ -22,7 +22,7 @@ import { plainToClass } from 'class-transformer';
 
 import { ConfluenceService } from './confluence.service';
 
-import { OutSpacesDto, OutPageDto, CreatePageDto } from '.';
+import { OutSpacesDto, OutPageDto, BoardDto } from '.';
 
 @ApiBadRequestResponse({})
 @ApiTags('confluence')
@@ -133,7 +133,7 @@ export class ConfluenceController {
   @Post('/content')
   public async createPage(
     @Session() session: { accessToken: string | undefined },
-    @Body() dto: CreatePageDto,
+    @Body() dto: BoardDto,
   ): Promise<OutPageDto> {
     if (session.accessToken === undefined) {
       throw new UnauthorizedException('Token is missing from session');
@@ -142,6 +142,7 @@ export class ConfluenceController {
     try {
       const result = await this.confluenceService.createPage(
         session.accessToken,
+        'TEST',
         dto,
       );
       return plainToClass(OutPageDto, result, {

@@ -18,6 +18,8 @@ import {
 // imports for the tempplating
 import * as Handlebars from 'handlebars';
 import { pageTemplate } from './pageTemplate';
+import { BoardDto } from './dto/board.dto';
+import { plainToClass } from 'class-transformer';
 Handlebars.registerHelper('inc', function(value, options) {
   return parseInt(value) + 1;
 });
@@ -107,29 +109,47 @@ export class ConfluenceService {
   }
 
   // convert json into XHTML
-  private _bodyFactory(body: PageBodyDto): string {
+  private _bodyFactory(body: BoardDto): string {
     const template = Handlebars.compile(pageTemplate);
 
-    const compiledPage = template(body);
+    const compiledPage = template({
+      logo:
+        'https://github.com/NoumanDilshad/images/blob/master/logo.png?raw=true',
+      date: body.createdAt.toLocaleDateString(),
+      percentage: body.participationRate * 100,
+      actionItems: body.actionItems.map(x => ({
+        selected: x.selected,
+        text: x.text,
+      })),
+      retrospective: body.columns.map(x => ({
+        title: x.name,
+        items: x.rows.map(y => y.text),
+      })),
+    });
 
     return compiledPage;
   }
 
   public async createPage(
     accessToken: string,
-    dto: CreatePageDto,
+    spaceKey: string,
+    dto: BoardDto,
   ): Promise<PostContentResponseDto> {
+    if (dto instanceof BoardDto === false) {
+      dto = plainToClass(BoardDto, dto);
+    }
+
     const authStr = `Bearer ${accessToken}`;
 
     const reqBody = {
       type: 'page',
-      title: dto.title,
+      title: dto.name,
       space: {
-        key: dto.spaceKey,
+        key: spaceKey,
       },
       body: {
         storage: {
-          value: this._bodyFactory(dto.body),
+          value: this._bodyFactory(dto),
           representation: 'storage',
         },
       },

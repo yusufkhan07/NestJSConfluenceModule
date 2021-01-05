@@ -24,7 +24,7 @@
     "@nestjs/core": "^6.7.2",
     "@nestjs/platform-express": "^6.7.2",
     "@nestjs/swagger": "^4.0.9",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "class-transformer": "^0.3.1",
     "handlebars": "^4.5.3",
     "nestjs-session": "^0.4.1",
